@@ -1,102 +1,57 @@
 # Task14 Міграція Pipeline в gitlab cicd
 
 ## Підготовка середовища розробки
-1. Експортуємо репозиторій з github у gitlab
-
-
-
-
-- Встановіть Kind: [Kind](https://kind.sigs.k8s.io/) - це інструмент, який дозволяє створювати та керувати локальними кластерами Kubernetes за допомогою «вузлів» контейнера Docker. Був розроблений для тестування самого Kubernetes, але може використовуватися для локальної розробки або CI.
-
+1. Виявляється що [GitLab](https://docs.gitlab.com/ee/install/) може бути розгорнуто локально з усіма його можливостями та інструментами. 
+- З усіх можливих варіантів обираємо вже звичний нам [GitLab Helm chart](https://docs.gitlab.com/charts/) 
+- Підготуємо кластер для розгортання пакету хелм
 ```sh
-$ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
-$ chmod +x ./kind
-$ sudo mv ./kind /usr/local/bin/kind
-$ kind version
-kind v0.11.1 go1.16.4 linux/amd64
+$ k3d cluster create gitlab-cluster --servers 1 --agents 3 --kubeconfig-update-default
+$ kubectl cluster-info
+Kubernetes control plane is running at https://0.0.0.0:41913
+CoreDNS is running at https://0.0.0.0:41913/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://0.0.0.0:41913/api/v1/namespaces/kube-system/services/https:metrics-server:https/proxykubectl cluster-info
+
+$ k config set-context --current --namespace=default
+
+$ helm repo add gitlab https://charts.gitlab.io/
+"gitlab" has been added to your repositories
 ```
-- Створимо кластер
+- Install GitLab
 ```sh
-$ kind create cluster --name jenkins
-Creating cluster "jenkins" ...
- ✓ Ensuring node image (kindest/node:v1.21.1) 🖼 
- ✓ Preparing nodes 📦  
- ✓ Writing configuration 📜 
- ✓ Starting control-plane 🕹️ 
- ✓ Installing CNI 🔌 
- ✓ Installing StorageClass 💾 
-Set kubectl context to "kind-jenkins"
-You can now use your cluster with:
+$ helm install gitlab gitlab/gitlab \
+  --set global.hosts.domain=smart-home.dp.ua \
+  --set certmanager-issuer.email=uanetsvilatiy@gmail.com
 
-$ kubectl cluster-info --context kind-jenkins
-Kubernetes control plane is running at https://127.0.0.1:42303
-CoreDNS is running at https://127.0.0.1:42303/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+NAME: gitlab
+LAST DEPLOYED: Wed Dec 13 00:56:51 2023
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+NOTES:
+=== CRITICAL
+The following charts are included for evaluation purposes only. They will not be supported by GitLab Support
+for production workloads. Use Cloud Native Hybrid deployments for production. For more information visit
+https://docs.gitlab.com/charts/installation/index.html#use-the-reference-architectures.
+- PostgreSQL
+- Redis
+- Gitaly
+- MinIO
 
-$ kubectl config set-context --current --namespace=default
-Context "kind-jenkins" modified
+=== NOTICE
+The minimum required version of PostgreSQL is now 13. See https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/doc/installation/upgrade.md for more details.
+
+=== NOTICE
+You've installed GitLab Runner without the ability to use 'docker in docker'.
+The GitLab Runner chart (gitlab/gitlab-runner) is deployed without the `privileged` flag by default for security purposes. This can be changed by setting `gitlab-runner.runners.privileged` to `true`. Before doing so, please read the GitLab Runner chart's documentation on why we
+chose not to enable this by default. See https://docs.gitlab.com/runner/install/kubernetes.html#running-docker-in-docker-containers-with-gitlab-runners
+Help us improve the installation experience, let us know how we did with a 1 minute survey:https://gitlab.fra1.qualtrics.com/jfe/form/SV_6kVqZANThUQ1bZb?installation=helm&release=16-6
 ```
-2. Встановіть Jenkins на кластер Kubernetes за допомогою Helm
-```sh
-$ helm repo add jenkinsci https://charts.jenkins.io/
-$ helm repo update
-$ helm install jenkins jenkinsci/jenkins
-```
+- Локальній машині не вистачило ресурсів для нормальної роботи серверу. 
 
-3. Після запуску Jenkins отримайте доступ до інтерфейсу користувача Jenkins
-```sh
-$ kubectl exec --namespace default -it svc/jenkins -c jenkins -- /bin/cat /run/secrets/additional/chart-admin-password && echo
-ddKNLSgScCElXRyfMFbexv
-
-$ kubectl --namespace default port-forward svc/jenkins 8080:8080&
-```
-4. Забезпечимо доступ Jenkins до HitHub
-- Згенеруємо  на локальному комп'ютері   
-```sh
-$ ssh-keygen
-Generating public/private rsa key pair.
-Your identification has been saved in /root/.ssh/id_rsa
-Your public key has been saved in /root/.ssh/id_rsa.pub
-# Публічний
-$ cat ~/.ssh/id_rsa.pub
-# Приватний 
-$ cat ~/.ssh/id_rsa
-```
-- Додамо публічну частину ключа до Deploy keys для [репозиторію з застосунком](https://github.com/vit-um/kbot/settings/keys)  
--  Поставте прапорець "Allow write access" (Дозволити запис) якщо вам потрібен доступ для запису. 
-- Увійдіть до Jenkins і відкрийте налаштування вашого проекту. 
-- У секції "Source Code Management" (Управління вихідним кодом) виберіть "Git". 
-- У полі "Repository URL" (URL репозиторію) введіть URL вашого репозиторію GitHub. 
-- В розділі "Credentials" (Облікові дані) виберіть "Add" (Додати) для додавання нових облікових даних. 
-- Виберіть тип облікових даних "SSH Username with private key" (SSH-користувач з приватним ключем). 
-- У полі "Private Key" (Приватний ключ) вставте ваш приватний ключ SSH. Ви можете взяти його з файлу  ~/.ssh/id_rsa  на вашому локальному комп'ютері. 
-- Введіть назву для цих облікових даних і натисніть "Add" (Додати) для збереження. 
-- Виберіть створені вами облікові дані в розділі "Credentials" (Облікові дані). 
-- Вкажемо шлях до скрипту, який ми підготували у полі Script Path `/pipeline/jenkins.groovy`
-- Збережіть налаштування проекту. 
-
-5. Налаштуємо доступ до локального комп'ютера за допомогою sshd щоб Jenkins міг використовувати його в якості агенту.
-- встановимо sshd сервер.
-```sh
-$ sudo apt-get install openssh-server
-$ sudo nano /etc/ssh/sshd_config
-
-# PubkeyAuthentication yes
-
-
-$ sudo service ssh restart
-$ ssh localhost -p 2222
-
-$ cat ~/.ssh/id_rsa.pub
-
-$ cat >>~/.ssh/authorized_keys  
-
-$ ssh localhost -p 2222
-Welcome to Ubuntu 22.04.1 LTS (GNU/Linux 5.15.90.1-microsoft-standard-WSL2 x86_64)
-```
-- Якщо це не передбачено початковою конфігурацією Jenkins встановимо плагін `SSH Build Agents`
-- Додамо параметри доступу до Jenkins:   
-      - `Launch method` > SSH Build Agents  
-      - `Credentials` > vit-um
-      - `Host Key Verification Strategy` > Non verifying... 
-      - `Port` > 2222
+2. Доопрацювати:
+- Розгорнути робоче середовище на сервері: 
+https://www.youtube.com/watch?v=8r5tF9TZ3wU&t=150s
+- Запустити пейплайн
+https://www.youtube.com/watch?v=jAIhhULc7YA
+https://www.youtube.com/watch?v=phlsVGysQSw
 
