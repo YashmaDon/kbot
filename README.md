@@ -51,7 +51,7 @@ Help us improve the installation experience, let us know how we did with a 1 min
 2. Доопрацювати:
 - Розгорнути робоче середовище на сервері: 
 https://www.youtube.com/watch?v=8r5tF9TZ3wU&t=150s
-- Запустити пейплайн
-https://www.youtube.com/watch?v=jAIhhULc7YA
-https://www.youtube.com/watch?v=phlsVGysQSw
+- Запустити пейплайн  
+https://www.youtube.com/watch?v=jAIhhULc7YA  
+https://www.youtube.com/watch?v=phlsVGysQSw  
 
