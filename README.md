@@ -13,7 +13,7 @@ $ git push --set-upstream origin Task18
 - В пошук вводимо: `Search: Exclude`
 - Видаляємо `**/.git`
 
-3. Для початку встановимо [gitleaks](https://github.com/gitleaks/gitleaks?tab=readme-ov-file#pre-commit) локально та перевіримо його роботу.
+3. Для початку встановимо [gitleaks](https://github.com/gitleaks/gitleaks) локально та перевіримо його роботу.
 ```sh
 $ cd ~
 $ git clone https://github.com/gitleaks/gitleaks.git
@@ -44,8 +44,8 @@ $ gitleaks detect --source . --verbose
     ○ ░
     ░    gitleaks
 
-Finding:     key: "************************************************"
-Secret:      
+Finding:     key: "35bde2bb875a7ad294146787d5409dd4e5b7ab51"
+Secret:      35bde2bb875a7ad294146787d5409dd4e5b7ab51
 RuleID:      telegram-bot-api-token
 Entropy:     4.637586
 File:        helm/values.yaml
@@ -95,6 +95,24 @@ repos:
 ```sh
 $ pre-commit autoupdate
 $ pre-commit install
+$ git add .
+$ git commit -m "this commit contains a secret"
+[INFO] Installing environment for https://github.com/gitleaks/gitleaks.
+[INFO] Once installed this environment will be reused.
+[INFO] This may take a few minutes...
+Detect hardcoded secrets.................................................Failed
 
+$ git add .
+$ git commit -m "this commit without a secret"
+Detect hardcoded secrets.................................................Passed
+[Task18 3530936] this commit contains a secret
+ 8 files changed, 83 insertions(+), 17 deletions(-)
+ create mode 100644 .pre-commit-config.yaml
 
+➜ SKIP=gitleaks git commit -m "skip gitleaks check"
+Detect hardcoded secrets................................................Skipped
 ```
+
+6. На доопрацювання:
+- Реалізований pre-commit hook скрипт з автоматичним встановленням gitleaks залежно від операційної системи, з опцією enable за допомогою git config 
+- Реалізований pre-commit hook скрипт з автоматичним встановленням gitleaks залежно від операційної системи, з опцією enable за допомогою git config та інсталяцією за методом “curl pipe sh” (задача делегована junior та middle інженерам)
