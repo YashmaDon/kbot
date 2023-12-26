@@ -40,7 +40,7 @@ pipeline {
                 sh "make image-${params.OS} ${params.ARCH}"
             }
         }
-        
+
         stage('login to GHCR') {
             steps {
                 sh "echo $GITHUB_TOKEN_PSW | docker login ghcr.io -u $GITHUB_TOKEN_USR --password-stdin"
@@ -51,6 +51,6 @@ pipeline {
             steps {
                 sh "make -n ${params.OS} ${params.ARCH} image push"
             }
-        } 
+        }
     }
 }

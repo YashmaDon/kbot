@@ -2,7 +2,7 @@
 name: KBOT-CICD
 
 # Визначимо подію, яка запустить виконання workflow процесу при змінах у гілці develop
-on: 
+on:
   push:
     branches:
       - develop
@@ -19,7 +19,7 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
-# перший крок задачі дозволить запускати на ранері репозиторій із скриптами для виконання дії. 
+# перший крок задачі дозволить запускати на ранері репозиторій із скриптами для виконання дії.
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -37,7 +37,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-# збираємо образ з використання змінної середовища 
+# збираємо образ з використання змінної середовища
       - name: Build&Push
         env:
           APP: "kbot"
@@ -50,7 +50,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 0 
+        fetch-depth: 0
     - run: echo "VERSION=$(git describe --tags --abbrev=0 --always)-$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
     - uses: mikefarah/yq@master
