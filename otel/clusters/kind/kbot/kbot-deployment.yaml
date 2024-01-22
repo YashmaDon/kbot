@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kbot
+  namespace: kbot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kbot
+  template:
+    metadata:
+      labels:
+        app: kbot
+      annotations:
+        # instrumentation.opentelemetry.io/inject-go: "monitoring/opentelemetry-instrumentation"
+        # instrumentation.opentelemetry.io/otel-go-auto-target-exe: "/kbot"
+        sidecar.opentelemetry.io/inject: "monitoring/opentelemetry-sidecar"
+    spec:
+      containers:
+      - name: kbot
+        image: umanetsvitaliy/kbot:v1.5.0-8d0aaa8-linux-amd64
+        securityContext:
+          capabilities:
+            add:
+              - SYS_PTRACE
+          privileged: true
+          runAsUser: 0
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        env:
+        - name: TELE_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: kbot
+              key: token
+        - name: METRICS_HOST
+          value: opentelemetry-collector.monitoring.svc.cluster.local:4317
