@@ -34,8 +34,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
+          username: YashmaDon
+          password: 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
 
 
       - name: Build&Push
